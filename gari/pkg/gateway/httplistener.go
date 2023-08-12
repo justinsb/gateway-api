@@ -29,15 +29,16 @@ func (i *Instance) AddHTTPListener(ctx context.Context) (*HTTPListener, error) {
 	}
 
 	return l, nil
-
 }
 
 func (l *HTTPListener) Start(ctx context.Context, listen string) error {
+	log := klog.FromContext(ctx)
 	ln, err := net.Listen("tcp", listen)
 	if err != nil {
 		return err
 	}
 	go func() {
+		log.Info("listening for http", "listen", listen)
 		if err := l.httpServer.Serve(ln); err != nil {
 			klog.ErrorS(err, "error from http server")
 		}

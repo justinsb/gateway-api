@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
+	"k8s.io/klog/v2"
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/gari/pkg/commonoperator"
 	"sigs.k8s.io/gateway-api/gari/pkg/controllers"
@@ -20,8 +22,47 @@ func main() {
 	}
 }
 
+type tlsFlag struct {
+	Host string
+	Dir  string
+}
+
+func (f *tlsFlag) String() string {
+	return fmt.Sprintf("Host=%s,Dir=%s", f.Host, f.Dir)
+}
+
+type tlsFlags []tlsFlag
+
+func (f *tlsFlags) String() string {
+	var s strings.Builder
+	for _, o := range *f {
+		s.WriteString(o.String())
+		s.WriteString(",")
+	}
+	return s.String()
+}
+
+func (f *tlsFlags) Set(value string) error {
+	tokens := strings.Split(value, ":")
+	if len(tokens) != 2 {
+		return fmt.Errorf("unexpected --tls value %q", value)
+	}
+	*f = append(*f, tlsFlag{
+		Host: tokens[0],
+		Dir:  tokens[1],
+	})
+	return nil
+}
+
 func run(ctx context.Context) error {
-	listen := ":8080"
+	log := klog.FromContext(ctx)
+
+	httpListen := ":8080"
+	httpsListen := ":8443"
+
+	var tlsFlags tlsFlags
+	flag.Var(&tlsFlags, "tls", "tls configuration")
+
 	flag.Parse()
 
 	gw, err := gateway.New()
@@ -29,10 +70,29 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	if listener, err := gw.AddHTTPListener(ctx); err != nil {
+	httpListener, err := gw.AddHTTPListener(ctx)
+	if err != nil {
 		return err
-	} else if err := listener.Start(ctx, listen); err != nil {
+	}
+
+	if err := httpListener.Start(ctx, httpListen); err != nil {
 		return err
+	}
+
+	log.Info("tls configuration", "tlsFlags", tlsFlags)
+	if len(tlsFlags) != 0 {
+		var tlsOptions []gateway.TLSConfig
+		for _, tlsFlag := range tlsFlags {
+			tlsOptions = append(tlsOptions, gateway.TLSConfig{
+				Dir:  tlsFlag.Dir,
+				Host: tlsFlag.Host,
+			})
+		}
+		if listener, err := gw.AddHTTPSListener(ctx, httpListener, tlsOptions); err != nil {
+			return err
+		} else if err := listener.Start(ctx, httpsListen); err != nil {
+			return err
+		}
 	}
 
 	op := commonoperator.Operator{}
