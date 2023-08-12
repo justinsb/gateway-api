@@ -48,42 +48,61 @@ func (r *httpRoutes) lookupHTTPRoute(ctx context.Context, req *http.Request) *ht
 	httpRoutes := r.byHost[host]
 	r.mutex.RUnlock()
 
+	bestScore := -1
+	var bestRoute *httpRoute
 	for _, httpRoute := range httpRoutes {
-		if httpRoute.matches(ctx, req) {
-			return httpRoute
+		score := httpRoute.matches(ctx, req)
+		if score > bestScore {
+			bestScore = score
+			bestRoute = httpRoute
 		}
-		log := klog.FromContext(ctx)
-		log.Info("route does not match", "httpRoute", httpRoute.obj)
-
 	}
 
-	if len(httpRoutes) == 0 {
+	if bestRoute == nil {
 		log := klog.FromContext(ctx)
 		log.Info("no routes for host", "host", host)
 	}
 
-	return nil
+	return bestRoute
 }
 
-func (r *httpRoute) matches(ctx context.Context, req *http.Request) bool {
+func (r *httpRoute) matches(ctx context.Context, req *http.Request) int {
+	bestScore := -1
+
 	for i := range r.obj.Spec.Rules {
+		score := -1
 		rule := &r.obj.Spec.Rules[i]
 		if len(rule.Matches) == 0 {
 			// If no matches are specified, the default is a prefix path match on “/”, which has the effect of matching every HTTP request.
-			return true
-		}
-		allMatch := true
-		for j := range rule.Matches {
-			if !satisfiesMatches(ctx, &rule.Matches[j], req) {
-				allMatch = false
-				break
+			score = 1
+		} else {
+			allMatch := true
+			for j := range rule.Matches {
+				if !satisfiesMatches(ctx, &rule.Matches[j], req) {
+					allMatch = false
+					break
+				}
+			}
+			if allMatch {
+				score = 1
+				for j := range rule.Matches {
+					match := &rule.Matches[j]
+					if match.Path != nil && match.Path.Value != nil {
+						score += len(*match.Path.Value)
+					}
+					if !satisfiesMatches(ctx, &rule.Matches[j], req) {
+						allMatch = false
+						break
+					}
+				}
 			}
 		}
-		if allMatch {
-			return true
+		if score > bestScore {
+			bestScore = score
+			// bestRule = rule
 		}
 	}
-	return false
+	return bestScore
 }
 
 func satisfiesMatches(ctx context.Context, match *gatewayapi.HTTPRouteMatch, req *http.Request) bool {
