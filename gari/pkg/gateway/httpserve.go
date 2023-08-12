@@ -12,7 +12,10 @@ import (
 func (s *httpRoute) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	backendRefs := s.obj.Spec.Rules[0].BackendRefs
+	// TODO: Which rule matched?
+	rule := s.obj.Spec.Rules[0]
+
+	backendRefs := rule.BackendRefs
 	if len(backendRefs) == 0 {
 		log := klog.FromContext(ctx)
 		log.Info("no backedRefs in rule")
@@ -41,7 +44,16 @@ func (s *httpRoute) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// This feels "wrong", but we don't have the scheme in e.g. the URL
+	forwardedProto := "http"
+	if req.TLS != nil {
+		forwardedProto = "https"
+	}
+
 	director := func(req *http.Request) {
+		// So backends know the original scheme
+		req.Header.Set("X-Forwarded-Proto", forwardedProto)
+
 		// targetQuery := target.RawQuery
 		req.URL.Scheme = "http"
 		req.URL.Host = backendHostName + ":" + strconv.Itoa(int(backendPort))
