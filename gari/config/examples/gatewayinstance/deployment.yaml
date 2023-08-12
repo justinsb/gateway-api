@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-instance
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway-instance
+  template:
+    metadata:
+      labels:
+        app: gateway-instance
+    spec:
+      containers:
+      - command:
+        - /gateway-instance
+        image: justinsb/gari:latest
+        name: gari
+      serviceAccount: gateway-instance
