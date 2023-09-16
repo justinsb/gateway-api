@@ -49,13 +49,13 @@ func (l *HTTPListener) Start(ctx context.Context, listen string) error {
 func (l *HTTPListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	httpRoute := l.gateway.lookupHTTPRoute(ctx, r)
-	if httpRoute == nil {
+	match, found := l.gateway.lookupHTTPRoute(ctx, r)
+	if !found {
 		log := klog.FromContext(ctx)
 		log.Info("no matching HTTPRoute for request", "url", r.URL)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
 	}
 
-	httpRoute.ServeHTTP(w, r)
+	match.route.serveHTTP(w, r, match.rule)
 }

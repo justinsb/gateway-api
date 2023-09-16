@@ -9,6 +9,7 @@ import (
 
 	"k8s.io/klog/v2"
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
+	"sigs.k8s.io/gateway-api/gari/apis/v1alpha1"
 	"sigs.k8s.io/gateway-api/gari/pkg/commonoperator"
 	"sigs.k8s.io/gateway-api/gari/pkg/controllers"
 	"sigs.k8s.io/gateway-api/gari/pkg/gateway"
@@ -60,12 +61,14 @@ func run(ctx context.Context) error {
 	httpListen := ":8080"
 	httpsListen := ":8443"
 
+	var spiffeID string
+	flag.StringVar(&spiffeID, "spiffe", spiffeID, "spiffe ID for backend communication")
 	var tlsFlags tlsFlags
 	flag.Var(&tlsFlags, "tls", "tls configuration")
 
 	flag.Parse()
 
-	gw, err := gateway.New()
+	gw, err := gateway.New(spiffeID)
 	if err != nil {
 		return err
 	}
@@ -97,6 +100,7 @@ func run(ctx context.Context) error {
 
 	op := commonoperator.Operator{}
 	op.RegisterSchema(gatewayv1beta1.AddToScheme)
+	op.RegisterSchema(v1alpha1.AddToScheme)
 	op.RegisterReconciler(&controllers.HTTPRouteController{Gateway: gw})
 	op.RunMain()
 	return nil
