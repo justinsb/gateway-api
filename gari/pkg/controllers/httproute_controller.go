@@ -49,7 +49,7 @@ func (r *HTTPRouteController) Reconcile(ctx context.Context, req reconcile.Reque
 	}
 
 	if !route.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err := r.Gateway.DeleteHTTPRoute(ctx, route); err != nil {
+		if err := r.Gateway.DeleteHTTPRoute(ctx, r.client, route); err != nil {
 			return ctrl.Result{}, err
 		}
 
@@ -70,7 +70,7 @@ func (r *HTTPRouteController) Reconcile(ctx context.Context, req reconcile.Reque
 		}
 	}
 
-	if err := r.Gateway.UpdateHTTPRoute(ctx, route); err != nil {
+	if err := r.Gateway.UpdateHTTPRoute(ctx, r.client, route); err != nil {
 		return reconcile.Result{}, err
 	}
 

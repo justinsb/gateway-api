@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"math"
 	"net"
 	"net/http"
 	"strings"
@@ -9,13 +10,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 type httpRoutes struct {
-	mutex  sync.RWMutex
-	byID   map[types.NamespacedName]*httpRoute
-	byHost map[string][]*httpRoute
+	spiffeID string
+	mutex    sync.RWMutex
+	byID     map[types.NamespacedName]*httpRoute
+	byHost   map[string][]*httpRoute
 }
 
 func (r *httpRoutes) init() {
@@ -25,12 +28,14 @@ func (r *httpRoutes) init() {
 
 // Should be immutable
 type httpRoute struct {
-	id    types.NamespacedName
-	hosts []string
-	obj   gatewayapi.HTTPRoute
+	id       types.NamespacedName
+	hosts    []string
+	spiffeID string
+	obj      gatewayapi.HTTPRoute
+	rules    []httpRule
 }
 
-func (r *httpRoutes) lookupHTTPRoute(ctx context.Context, req *http.Request) *httpRoute {
+func (r *httpRoutes) lookupHTTPRoute(ctx context.Context, req *http.Request) (routeMatch, bool) {
 	host := req.Host
 
 	// TODO: IPv6 wil confuse the : check
@@ -39,7 +44,7 @@ func (r *httpRoutes) lookupHTTPRoute(ctx context.Context, req *http.Request) *ht
 		if err != nil {
 			log := klog.FromContext(ctx)
 			log.Info("invalid host header", "host", req.Host)
-			return nil
+			return routeMatch{}, false
 		}
 		host = h
 	}
@@ -48,100 +53,63 @@ func (r *httpRoutes) lookupHTTPRoute(ctx context.Context, req *http.Request) *ht
 	httpRoutes := r.byHost[host]
 	r.mutex.RUnlock()
 
-	bestScore := -1
-	var bestRoute *httpRoute
+	var bestMatch routeMatch
+	bestMatch.score = math.MinInt
 	for _, httpRoute := range httpRoutes {
-		score := httpRoute.matches(ctx, req)
-		if score > bestScore {
-			bestScore = score
-			bestRoute = httpRoute
+		routeMatch, found := httpRoute.matches(ctx, req)
+		if found && routeMatch.score > bestMatch.score {
+			bestMatch = routeMatch
 		}
 	}
 
-	if bestRoute == nil {
+	if bestMatch.score == math.MinInt {
 		log := klog.FromContext(ctx)
 		log.Info("no routes for host", "host", host)
+		return routeMatch{}, false
 	}
 
-	return bestRoute
+	return bestMatch, true
 }
 
-func (r *httpRoute) matches(ctx context.Context, req *http.Request) int {
-	bestScore := -1
-
-	for i := range r.obj.Spec.Rules {
-		score := -1
-		rule := &r.obj.Spec.Rules[i]
-		if len(rule.Matches) == 0 {
-			// If no matches are specified, the default is a prefix path match on “/”, which has the effect of matching every HTTP request.
-			score = 1
-		} else {
-			allMatch := true
-			for j := range rule.Matches {
-				if !satisfiesMatches(ctx, &rule.Matches[j], req) {
-					allMatch = false
-					break
-				}
-			}
-			if allMatch {
-				score = 1
-				for j := range rule.Matches {
-					match := &rule.Matches[j]
-					if match.Path != nil && match.Path.Value != nil {
-						score += len(*match.Path.Value)
-					}
-					if !satisfiesMatches(ctx, &rule.Matches[j], req) {
-						allMatch = false
-						break
-					}
-				}
-			}
-		}
-		if score > bestScore {
-			bestScore = score
-			// bestRule = rule
-		}
-	}
-	return bestScore
+type routeMatch struct {
+	score int
+	route *httpRoute
+	rule  *httpRule
 }
 
-func satisfiesMatches(ctx context.Context, match *gatewayapi.HTTPRouteMatch, req *http.Request) bool {
-	if match.Path != nil {
-		reqPath := req.URL.Path
+func (r *httpRoute) matches(ctx context.Context, req *http.Request) (routeMatch, bool) {
+	var bestMatch routeMatch
+	bestMatch.score = math.MinInt
 
-		value := withDefault(match.Path.Value, "/")
-		matchType := withDefault(match.Path.Type, gatewayapi.PathMatchPathPrefix)
-
-		switch matchType {
-		case gatewayapi.PathMatchPathPrefix:
-			if !strings.HasPrefix(reqPath, value) {
-				return false
+	for i := range r.rules {
+		rule := &r.rules[i]
+		score := rule.scoreMatch(ctx, req)
+		if score > bestMatch.score {
+			bestMatch = routeMatch{
+				score: score,
+				route: r,
+				rule:  rule,
 			}
-		case gatewayapi.PathMatchExact:
-			if reqPath != value {
-				return false
-			}
-		default:
-			log := klog.FromContext(ctx)
-			log.Info("unsupported path match type", "matchType", matchType)
-			return false
 		}
 	}
 
-	return true
+	if bestMatch.score == math.MinInt {
+		return routeMatch{}, false
+	}
+	return bestMatch, true
 }
 
-func (r *httpRoutes) UpdateHTTPRoute(ctx context.Context, route *gatewayapi.HTTPRoute) error {
+func (r *httpRoutes) UpdateHTTPRoute(ctx context.Context, client client.Client, route *gatewayapi.HTTPRoute) error {
 	id := types.NamespacedName{Namespace: route.GetNamespace(), Name: route.GetName()}
-	return r.updateHTTPRoute(ctx, id, route)
+	return r.updateHTTPRoute(ctx, client, id, route)
 }
 
-func (r *httpRoutes) DeleteHTTPRoute(ctx context.Context, route *gatewayapi.HTTPRoute) error {
+func (r *httpRoutes) DeleteHTTPRoute(ctx context.Context, client client.Client, route *gatewayapi.HTTPRoute) error {
 	id := types.NamespacedName{Namespace: route.GetNamespace(), Name: route.GetName()}
-	return r.updateHTTPRoute(ctx, id, nil)
+	return r.updateHTTPRoute(ctx, client, id, nil)
 }
 
-func (r *httpRoutes) updateHTTPRoute(ctx context.Context, id types.NamespacedName, newObj *gatewayapi.HTTPRoute) error {
+func (r *httpRoutes) updateHTTPRoute(ctx context.Context, client client.Client, id types.NamespacedName, newObj *gatewayapi.HTTPRoute) error {
 	var newHTTPRoute *httpRoute
 	if newObj != nil {
 		var hosts []string
@@ -150,9 +118,16 @@ func (r *httpRoutes) updateHTTPRoute(ctx context.Context, id types.NamespacedNam
 		}
 
 		newHTTPRoute = &httpRoute{
-			id:    id,
-			hosts: hosts,
-			obj:   *newObj.DeepCopy(),
+			id:       id,
+			hosts:    hosts,
+			spiffeID: r.spiffeID,
+			obj:      *newObj.DeepCopy(),
+		}
+
+		for i := range newObj.Spec.Rules {
+			rule := &newObj.Spec.Rules[i]
+			hr := buildHTTPRule(ctx, client, id.Namespace, rule)
+			newHTTPRoute.rules = append(newHTTPRoute.rules, hr)
 		}
 	}
 
