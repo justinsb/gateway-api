@@ -68,6 +68,12 @@ func run(ctx context.Context) error {
 
 	flag.Parse()
 
+	if spiffeID != "" {
+		if err := gateway.InitSPIFFE(ctx); err != nil {
+			return err
+		}
+	}
+
 	gw, err := gateway.New(spiffeID)
 	if err != nil {
 		return err

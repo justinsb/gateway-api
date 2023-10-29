@@ -10,6 +10,7 @@ import (
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"k8s.io/klog/v2"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+	"sigs.k8s.io/gateway-api/gari/pkg/debug"
 )
 
 func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *httpRule) {
@@ -57,8 +58,15 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 	}
 
 	targetProtocol := "http"
-	if s.spiffeID != "" {
+	switch backendPort {
+	case 80, 8080:
+		targetProtocol = "http"
+		klog.Warningf("backend port for %v is %v; inferred target protocol %v", backendHostName, backendPort, targetProtocol)
+	case 443, 8443:
 		targetProtocol = "https"
+		klog.Warningf("backend port for %v is %v; inferred target protocol %v", backendHostName, backendPort, targetProtocol)
+	default:
+		klog.Warningf("cannot determine backend protocol for %v port %v; backend=%+v", backendHostName, backendPort, debug.JSON(backendRef))
 	}
 
 	director := func(req *http.Request) {
@@ -81,7 +89,7 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 	// TODO: Can we cache httpTransport?  by backend?
 	httpTransport := &http.Transport{}
 
-	if s.spiffeID != "" {
+	if s.spiffeID != "" && targetProtocol == "https" {
 		// Allowed SPIFFE ID
 		spiffeID := s.spiffeID
 		spiffeID = strings.ReplaceAll(spiffeID, "{{namespace}}", serviceNamespace)
