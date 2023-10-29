@@ -15,12 +15,12 @@ type spiffe struct {
 
 var SPIFFE spiffe
 
-func init() {
-	ctx := context.Background()
+func InitSPIFFE(ctx context.Context) error {
 	// TODO: Hook up to sockets?  Call init from main?
 	if err := SPIFFE.Init(ctx); err != nil {
-		klog.Fatalf("failed to init spiffe: %v", err)
+		return fmt.Errorf("initializing SPIFFE: %w", err)
 	}
+	return nil
 }
 
 func (s *spiffe) Init(ctx context.Context) error {
