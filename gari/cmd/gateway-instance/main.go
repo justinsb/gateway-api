@@ -8,6 +8,9 @@ import (
 	"strings"
 
 	"k8s.io/klog/v2"
+
+	"github.com/justinsb/packages/kinspire/client"
+
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/gari/apis/v1alpha1"
 	"sigs.k8s.io/gateway-api/gari/pkg/commonoperator"
@@ -69,9 +72,12 @@ func run(ctx context.Context) error {
 	flag.Parse()
 
 	if spiffeID != "" {
-		if err := gateway.InitSPIFFE(ctx); err != nil {
+		if err := client.SPIFFE.Init(ctx); err != nil {
 			return err
 		}
+		// if err := gateway.InitSPIFFE(ctx); err != nil {
+		// 	return err
+		// }
 	}
 
 	gw, err := gateway.New(spiffeID)

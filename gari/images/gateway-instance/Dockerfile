@@ -1,4 +1,4 @@
-FROM golang:1.20.7 AS builder
+FROM golang:1.21.3 AS builder
 
 WORKDIR /src
 ADD go.mod go.sum /src
