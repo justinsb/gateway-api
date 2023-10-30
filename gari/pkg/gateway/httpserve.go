@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/justinsb/packages/kinspire/client"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"k8s.io/klog/v2"
@@ -90,6 +91,8 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 	httpTransport := &http.Transport{}
 
 	if s.spiffeID != "" && targetProtocol == "https" {
+		spiffeSource := client.SPIFFE.Source()
+
 		// Allowed SPIFFE ID
 		spiffeID := s.spiffeID
 		spiffeID = strings.ReplaceAll(spiffeID, "{{namespace}}", serviceNamespace)
@@ -98,7 +101,7 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 
 		klog.Infof("creating tlsclientconfig %q requires %q", backendHostName, spiffeID)
 		// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/client`
-		tlsClientConfig := tlsconfig.MTLSClientConfig(SPIFFE.source, SPIFFE.source, tlsconfig.AuthorizeID(serverID))
+		tlsClientConfig := tlsconfig.MTLSClientConfig(spiffeSource, spiffeSource, tlsconfig.AuthorizeID(serverID))
 
 		httpTransport.TLSClientConfig = tlsClientConfig
 	}
