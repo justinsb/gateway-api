@@ -9,12 +9,15 @@ import (
 	"strings"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
+	kinspire "github.com/justinsb/packages/kinspire/client"
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
+	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
@@ -27,7 +30,7 @@ var _ Filter = &oidcAuthFilter{}
 
 //+kubebuilder:rbac:groups=gari.gateway.networking.x-k8s.io,resources=external,verbs=get;list;watch
 
-func buildExternalFilter(ctx context.Context, client client.Client, ns string, ref *gatewayapi.LocalObjectReference) (*externalFilter, error) {
+func buildExternalFilter(ctx context.Context, client client.Client, ns string, ref *gatewayapi.LocalObjectReference, spiffe *kinspire.SPIFFESource) (*externalFilter, error) {
 	// obj := &v1alpha1.External{}
 	// id := types.NamespacedName{
 	// 	Name:      string(ref.Name),
@@ -41,9 +44,12 @@ func buildExternalFilter(ctx context.Context, client client.Client, ns string, r
 	// }
 
 	// TODO: Make generic
-	target := "kweb-sso-gateway-filter.kweb-sso-system:80"
+	target := "kweb-sso-gateway-filter.kweb-sso-system:443"
 
-	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	targetID := spiffeid.RequireFromString("spiffe://k8s.local/ns/kweb-sso-system/sa/kweb-sso-gateway-filter")
+	tlsConfig := tlsconfig.MTLSClientConfig(spiffe, spiffe, tlsconfig.AuthorizeID(targetID))
+
+	dialOptions := []grpc.DialOption{grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))}
 	conn, err := grpc.Dial(target, dialOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("dialing grpc target %q: %w", target, err)

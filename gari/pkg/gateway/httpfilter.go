@@ -39,7 +39,7 @@ func (r *httpRule) buildFilter(ctx context.Context, client client.Client, ns str
 			return buildOIDCAuthFilter(ctx, client, ns, obj.ExtensionRef, r.parent.spiffe)
 
 		case "External":
-			return buildExternalFilter(ctx, client, ns, obj.ExtensionRef)
+			return buildExternalFilter(ctx, client, ns, obj.ExtensionRef, r.parent.spiffe)
 
 		default:
 			return nil, fmt.Errorf("unhandled extensionRef kind %v", obj)
