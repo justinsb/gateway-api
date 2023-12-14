@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	kinspire "github.com/justinsb/packages/kinspire/client"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,6 +17,7 @@ import (
 
 type httpRoutes struct {
 	spiffeID string
+	spiffe   *kinspire.SPIFFESource
 	mutex    sync.RWMutex
 	byID     map[types.NamespacedName]*httpRoute
 	byHost   map[string][]*httpRoute
@@ -31,6 +33,7 @@ type httpRoute struct {
 	id       types.NamespacedName
 	hosts    []string
 	spiffeID string
+	spiffe   *kinspire.SPIFFESource
 	obj      gatewayapi.HTTPRoute
 	rules    []httpRule
 }
@@ -121,12 +124,13 @@ func (r *httpRoutes) updateHTTPRoute(ctx context.Context, client client.Client, 
 			id:       id,
 			hosts:    hosts,
 			spiffeID: r.spiffeID,
+			spiffe:   r.spiffe,
 			obj:      *newObj.DeepCopy(),
 		}
 
 		for i := range newObj.Spec.Rules {
 			rule := &newObj.Spec.Rules[i]
-			hr := buildHTTPRule(ctx, client, id.Namespace, rule)
+			hr := r.buildHTTPRule(ctx, client, id.Namespace, rule)
 			newHTTPRoute.rules = append(newHTTPRoute.rules, hr)
 		}
 	}

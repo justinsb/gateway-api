@@ -6,24 +6,28 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/spiffe/go-spiffe/v2/svid/x509svid"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/gari/apis/v1alpha1"
 	"sigs.k8s.io/gateway-api/gari/pkg/oidc"
+
+	kinspire "github.com/justinsb/packages/kinspire/client"
 )
 
 type oidcAuthFilter struct {
 	loginURL      string
 	authProviders []*oidc.Provider
+	spiffe        *kinspire.SPIFFESource
 }
 
 var _ Filter = &oidcAuthFilter{}
 
 //+kubebuilder:rbac:groups=gari.gateway.networking.x-k8s.io,resources=oidcauths,verbs=get;list;watch
 
-func buildOIDCAuthFilter(ctx context.Context, client client.Client, ns string, ref *gatewayapi.LocalObjectReference) (*oidcAuthFilter, error) {
+func buildOIDCAuthFilter(ctx context.Context, client client.Client, ns string, ref *gatewayapi.LocalObjectReference, spiffe *kinspire.SPIFFESource) (*oidcAuthFilter, error) {
 	obj := &v1alpha1.OIDCAuth{}
 	id := types.NamespacedName{
 		Name:      string(ref.Name),
@@ -46,6 +50,7 @@ func buildOIDCAuthFilter(ctx context.Context, client client.Client, ns string, r
 	return &oidcAuthFilter{
 		loginURL:      obj.Spec.LoginURL,
 		authProviders: authProviders,
+		spiffe:        spiffe,
 	}, nil
 }
 
