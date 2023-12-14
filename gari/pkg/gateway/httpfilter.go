@@ -28,7 +28,7 @@ func (f *errorFilter) Handle(w http.ResponseWriter, req *http.Request) bool {
 	return true
 }
 
-func buildFilter(ctx context.Context, client client.Client, ns string, obj *gatewayapi.HTTPRouteFilter) (Filter, error) {
+func (r *httpRule) buildFilter(ctx context.Context, client client.Client, ns string, obj *gatewayapi.HTTPRouteFilter) (Filter, error) {
 	switch obj.Type {
 	case gatewayapi.HTTPRouteFilterExtensionRef:
 		if obj.ExtensionRef == nil {
@@ -36,7 +36,10 @@ func buildFilter(ctx context.Context, client client.Client, ns string, obj *gate
 		}
 		switch obj.ExtensionRef.Kind {
 		case "OIDCAuth":
-			return buildOIDCAuthFilter(ctx, client, ns, obj.ExtensionRef)
+			return buildOIDCAuthFilter(ctx, client, ns, obj.ExtensionRef, r.parent.spiffe)
+
+		case "External":
+			return buildExternalFilter(ctx, client, ns, obj.ExtensionRef)
 
 		default:
 			return nil, fmt.Errorf("unhandled extensionRef kind %v", obj)

@@ -3,9 +3,12 @@ package gateway
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"net"
 	"path/filepath"
 
+	kinspire "github.com/justinsb/packages/kinspire/client"
 	"k8s.io/klog/v2"
 )
 
@@ -14,6 +17,8 @@ type HTTPSListener struct {
 	http         *HTTPListener
 	tlsConfig    *tls.Config
 	certificates []*certificate
+
+	spiffe *kinspire.SPIFFESource
 }
 
 type TLSConfig struct {
@@ -30,15 +35,35 @@ func (i *Instance) AddHTTPSListener(ctx context.Context, http *HTTPListener, tls
 		}
 		certificates = append(certificates, cert)
 	}
+
 	l := &HTTPSListener{
 		gateway:      i,
 		http:         http,
 		certificates: certificates,
+		spiffe:       i.spiffe,
 	}
+
+	svid, err := l.spiffe.GetX509SVID()
+	if err != nil {
+		return nil, fmt.Errorf("getting x509 svid: %w", err)
+	}
+
+	trustBundle, err := l.spiffe.GetX509BundleForTrustDomain(svid.ID.TrustDomain())
+	if err != nil {
+		return nil, fmt.Errorf("getting spiffe trust bundle: %w", err)
+	}
+
+	clientCAs := x509.NewCertPool()
+	for _, cert := range trustBundle.X509Authorities() {
+		clientCAs.AddCert(cert)
+	}
+
 	l.tlsConfig = &tls.Config{
 		GetCertificate: l.getCertificate,
 		// MinVersion:               tls.VersionTLS13,
 		// PreferServerCipherSuites: true,
+		ClientAuth: tls.RequestClientCert,
+		ClientCAs:  clientCAs,
 	}
 
 	return l, nil

@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/justinsb/packages/kinspire/client"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"k8s.io/klog/v2"
@@ -91,7 +90,7 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 	httpTransport := &http.Transport{}
 
 	if s.spiffeID != "" && targetProtocol == "https" {
-		spiffeSource := client.SPIFFE.Source()
+		spiffeSource := s.spiffe
 
 		// Allowed SPIFFE ID
 		spiffeID := s.spiffeID

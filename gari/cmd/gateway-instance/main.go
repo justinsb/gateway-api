@@ -71,16 +71,18 @@ func run(ctx context.Context) error {
 
 	flag.Parse()
 
+	var spiffe *client.SPIFFESource
 	if spiffeID != "" {
 		if err := client.SPIFFE.Init(ctx); err != nil {
 			return err
 		}
+		spiffe = client.SPIFFE.Source()
 		// if err := gateway.InitSPIFFE(ctx); err != nil {
 		// 	return err
 		// }
 	}
 
-	gw, err := gateway.New(spiffeID)
+	gw, err := gateway.New(spiffe, spiffeID)
 	if err != nil {
 		return err
 	}

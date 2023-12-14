@@ -14,22 +14,24 @@ import (
 type httpRule struct {
 	obj *gatewayapi.HTTPRouteRule
 
+	parent *httpRoutes
+
 	Filters []Filter
 }
 
-func buildHTTPRule(ctx context.Context, client client.Client, ns string, obj *gatewayapi.HTTPRouteRule) httpRule {
-	r := httpRule{obj: obj}
+func (r *httpRoutes) buildHTTPRule(ctx context.Context, client client.Client, ns string, obj *gatewayapi.HTTPRouteRule) httpRule {
+	o := httpRule{obj: obj, parent: r}
 	for i := range obj.Filters {
 		filter := &obj.Filters[i]
-		f, err := buildFilter(ctx, client, ns, filter)
+		f, err := o.buildFilter(ctx, client, ns, filter)
 		if err != nil {
 			log := klog.FromContext(ctx)
 			log.Error(err, "error building filter")
 			f = &errorFilter{err: err}
 		}
-		r.Filters = append(r.Filters, f)
+		o.Filters = append(o.Filters, f)
 	}
-	return r
+	return o
 }
 
 func (r *httpRule) scoreMatch(ctx context.Context, req *http.Request) int {
