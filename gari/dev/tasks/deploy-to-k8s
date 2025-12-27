@@ -35,6 +35,11 @@ kubectl create namespace gateway-system --dry-run=client -o yaml | kubectl apply
 
 # Apply Gateway API CRDs
 kubectl apply --server-side -f ${REPO_ROOT}/config/crd/standard
+kubectl apply --server-side -k ${REPO_ROOT}/config/crd/experimental/
+
+# Apply RBAC
+kubectl apply --server-side -f config/rbac/role.yaml
+
 
 cat k8s/manifest.yaml | \
 sed "s|gateway-instance:latest|${IMAGE_PREFIX}gateway-instance:${IMAGE_TAG}|g" | \

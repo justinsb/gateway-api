@@ -95,7 +95,7 @@ func (o *Operator) run(ctx context.Context) error {
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "gari.gateway.k8s.io",
 
-		// MapperProvider provides the rest mapper used to map go types to Kubernetes APIs
+		// // MapperProvider provides the rest mapper used to map go types to Kubernetes APIs
 		// MapperProvider: restmapper.NewControllerRESTMapper,
 	})
 	if err != nil {

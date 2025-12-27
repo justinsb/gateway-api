@@ -6,14 +6,6 @@ metadata:
   name: gari
 rules:
 - apiGroups:
-  - gari.gateway.networking.x-k8s.io
-  resources:
-  - oidcauths
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
   - gateway.networking.k8s.io
   resources:
   - httproutes
@@ -29,6 +21,26 @@ rules:
   - gateway.networking.k8s.io
   resources:
   - httproutes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - tlsroutes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - tlsroutes/status
   verbs:
   - get
   - patch

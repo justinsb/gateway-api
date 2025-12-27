@@ -3,8 +3,7 @@ module sigs.k8s.io/gateway-api/gari
 go 1.24.0
 
 require (
-	github.com/justinsb/packages/kinspire/client v0.0.0-20231030034513-1e0fb8c12cd8
-	github.com/spiffe/go-spiffe/v2 v2.5.0
+	golang.org/x/crypto v0.41.0
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
 	k8s.io/klog/v2 v2.130.1
@@ -43,7 +42,6 @@ require (
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	github.com/zeebo/errs v1.4.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.43.0 // indirect
@@ -54,8 +52,6 @@ require (
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/genproto v0.0.0-20230223222841-637eb2293923 // indirect
-	google.golang.org/grpc v1.75.1 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

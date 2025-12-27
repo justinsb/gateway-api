@@ -11,6 +11,7 @@ import (
 
 	// "github.com/justinsb/packages/kinspire/client"
 
+	gatewayv1alpha3 "sigs.k8s.io/gateway-api/apis/v1alpha3"
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/gari/apis/v1alpha1"
 	"sigs.k8s.io/gateway-api/gari/pkg/commonoperator"
@@ -71,6 +72,9 @@ func run(ctx context.Context) error {
 	var tlsFlags tlsFlags
 	flag.Var(&tlsFlags, "tls", "tls configuration")
 
+	sni := true
+	flag.BoolVar(&sni, "sni", sni, "support SNI for TLS routes")
+
 	flag.Parse()
 
 	// var spiffe *client.SPIFFESource
@@ -114,10 +118,28 @@ func run(ctx context.Context) error {
 		}
 	}
 
+	if sni {
+		sniConfig := gateway.SNIListenerConfig{}
+		listener, err := gw.AddSNIListener(ctx, sniConfig)
+		if err != nil {
+			return err
+		}
+		log.Info("starting sni listener", "listen", httpsListen)
+		if err := listener.Start(ctx, httpsListen); err != nil {
+			return err
+		}
+	}
+
 	op := commonoperator.Operator{}
 	op.RegisterSchema(gatewayv1beta1.AddToScheme)
 	op.RegisterSchema(v1alpha1.AddToScheme)
+	if sni {
+		op.RegisterSchema(gatewayv1alpha3.AddToScheme)
+	}
 	op.RegisterReconciler(&controllers.HTTPRouteController{Gateway: gw})
+	if sni {
+		op.RegisterReconciler(&controllers.TLSRouteController{Gateway: gw})
+	}
 	op.RunMain()
 	return nil
 }
