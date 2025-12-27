@@ -63,9 +63,9 @@ func run(ctx context.Context) error {
 	log := klog.FromContext(ctx)
 
 	httpListen := ":8080"
-	flag.StringVar(&httpListen, "http-listen", httpListen, "http listen address")
-	httpsListen := ":8443"
-	flag.StringVar(&httpsListen, "https-listen", httpsListen, "https listen address")
+	flag.StringVar(&httpListen, "http", httpListen, "http listen address")
+	httpsEndpoints := stringSliceFlag{}
+	flag.Var(&httpsEndpoints, "https", "https listen addresses")
 
 	// var spiffeID string
 	// flag.StringVar(&spiffeID, "spiffe", spiffeID, "spiffe ID for backend communication")
@@ -111,10 +111,15 @@ func run(ctx context.Context) error {
 				Host: tlsFlag.Host,
 			})
 		}
-		if listener, err := gw.AddHTTPSListener(ctx, httpListener, tlsOptions); err != nil {
+		listener, err := gw.AddHTTPSListener(ctx, httpListener, tlsOptions)
+		if err != nil {
 			return err
-		} else if err := listener.Start(ctx, httpsListen); err != nil {
-			return err
+		}
+
+		for _, httpsListen := range httpsEndpoints {
+			if err := listener.Start(ctx, httpsListen); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -124,9 +129,11 @@ func run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		log.Info("starting sni listener", "listen", httpsListen)
-		if err := listener.Start(ctx, httpsListen); err != nil {
-			return err
+		for _, httpsListen := range httpsEndpoints {
+			log.Info("starting sni listener", "listen", httpsListen)
+			if err := listener.Start(ctx, httpsListen); err != nil {
+				return err
+			}
 		}
 	}
 

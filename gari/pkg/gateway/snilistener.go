@@ -133,7 +133,7 @@ func (p *parsedExtensions) ParseServerName() (*ServerNameInfo, error) {
 
 	var nameList cryptobyte.String
 	if !in.ReadUint16LengthPrefixed(&nameList) {
-		return nil, fmt.Errorf("malformed server name data")
+		return nil, fmt.Errorf("malformed server name data (name list length)")
 	}
 	if nameList.Empty() {
 		return nil, fmt.Errorf("empty server name data")
@@ -141,11 +141,11 @@ func (p *parsedExtensions) ParseServerName() (*ServerNameInfo, error) {
 	for !nameList.Empty() {
 		var nameType uint8
 		if !nameList.ReadUint8(&nameType) {
-			return nil, fmt.Errorf("malformed server name data")
+			return nil, fmt.Errorf("malformed server name data (name type)")
 		}
 		var nameData cryptobyte.String
 		if !nameList.ReadUint16LengthPrefixed(&nameData) {
-			return nil, fmt.Errorf("malformed server name data")
+			return nil, fmt.Errorf("malformed server name data (name data)")
 		}
 		if nameData.Empty() {
 			return nil, fmt.Errorf("empty server name data")
