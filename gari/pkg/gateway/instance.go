@@ -4,21 +4,21 @@ import (
 	"context"
 	"net/http"
 
-	kinspire "github.com/justinsb/packages/kinspire/client"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 type Instance struct {
 	httpRoutes httpRoutes
-	spiffe     *kinspire.SPIFFESource
+	// spiffe     *kinspire.SPIFFESource
 }
 
-func New(spiffe *kinspire.SPIFFESource, spiffeID string) (*Instance, error) {
+// func New(spiffe *kinspire.SPIFFESource, spiffeID string) (*Instance, error) {
+func New() (*Instance, error) {
 	i := &Instance{}
-	i.spiffe = spiffe
-	i.httpRoutes.spiffeID = spiffeID
-	i.httpRoutes.spiffe = spiffe
+	// i.spiffe = spiffe
+	// i.httpRoutes.spiffeID = spiffeID
+	// i.httpRoutes.spiffe = spiffe
 	i.httpRoutes.init()
 	return i, nil
 }

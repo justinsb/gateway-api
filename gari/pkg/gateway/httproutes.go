@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	kinspire "github.com/justinsb/packages/kinspire/client"
+	// kinspire "github.com/justinsb/packages/kinspire/client"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,11 +16,11 @@ import (
 )
 
 type httpRoutes struct {
-	spiffeID string
-	spiffe   *kinspire.SPIFFESource
-	mutex    sync.RWMutex
-	byID     map[types.NamespacedName]*httpRoute
-	byHost   map[string][]*httpRoute
+	// spiffeID string
+	// spiffe   *kinspire.SPIFFESource
+	mutex  sync.RWMutex
+	byID   map[types.NamespacedName]*httpRoute
+	byHost map[string][]*httpRoute
 }
 
 func (r *httpRoutes) init() {
@@ -30,12 +30,12 @@ func (r *httpRoutes) init() {
 
 // Should be immutable
 type httpRoute struct {
-	id       types.NamespacedName
-	hosts    []string
-	spiffeID string
-	spiffe   *kinspire.SPIFFESource
-	obj      gatewayapi.HTTPRoute
-	rules    []httpRule
+	id    types.NamespacedName
+	hosts []string
+	// spiffeID string
+	// spiffe   *kinspire.SPIFFESource
+	obj   gatewayapi.HTTPRoute
+	rules []httpRule
 }
 
 func (r *httpRoutes) lookupHTTPRoute(ctx context.Context, req *http.Request) (routeMatch, bool) {
@@ -121,11 +121,11 @@ func (r *httpRoutes) updateHTTPRoute(ctx context.Context, client client.Client, 
 		}
 
 		newHTTPRoute = &httpRoute{
-			id:       id,
-			hosts:    hosts,
-			spiffeID: r.spiffeID,
-			spiffe:   r.spiffe,
-			obj:      *newObj.DeepCopy(),
+			id:    id,
+			hosts: hosts,
+			// spiffeID: r.spiffeID,
+			// spiffe:   r.spiffe,
+			obj: *newObj.DeepCopy(),
 		}
 
 		for i := range newObj.Spec.Rules {

@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway-system
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: gateway-instance
+  namespace: gateway-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway-instance
+  template:
+    metadata:
+      labels:
+        app: gateway-instance
+    spec:
+      serviceAccount: gateway-instance
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: gateway-instance
+        image: gateway-instance:latest
+        args:
+        - --http-listen
+        - ":80"
+        - --https-listen
+        - ":443"
+        # securityContext:
+        #   capabilities:
+        #     add:
+        #     - NET_BIND_SERVICE
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: gateway-instance
+  namespace: gateway-system
+spec:
+  # externalIPs:
+  # - 8.8.8.8
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: gateway-instance
+  type: ClusterIP
+
+---
+
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: gateway-instance
+  namespace: gateway-system
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gateway-instance
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gateway-instance
+subjects:
+- kind: ServiceAccount
+  name: gateway-instance
+  namespace: gateway-system
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gateway-instance
+rules:
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - httproutes
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - gateway.networking.k8s.io
+  resources:
+  - httproutes/status
+  verbs:
+  - update

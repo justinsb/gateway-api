@@ -3,6 +3,7 @@ go 1.24.0
 use (
 	.
 	./conformance
+	./gari
 	./tests
 	./tools
 )

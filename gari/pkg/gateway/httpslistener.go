@@ -4,11 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"net"
 	"path/filepath"
 
-	kinspire "github.com/justinsb/packages/kinspire/client"
+	// kinspire "github.com/justinsb/packages/kinspire/client"
 	"k8s.io/klog/v2"
 )
 
@@ -18,7 +17,7 @@ type HTTPSListener struct {
 	tlsConfig    *tls.Config
 	certificates []*certificate
 
-	spiffe *kinspire.SPIFFESource
+	// spiffe *kinspire.SPIFFESource
 }
 
 type TLSConfig struct {
@@ -40,23 +39,23 @@ func (i *Instance) AddHTTPSListener(ctx context.Context, http *HTTPListener, tls
 		gateway:      i,
 		http:         http,
 		certificates: certificates,
-		spiffe:       i.spiffe,
+		// spiffe:       i.spiffe,
 	}
 
-	svid, err := l.spiffe.GetX509SVID()
-	if err != nil {
-		return nil, fmt.Errorf("getting x509 svid: %w", err)
-	}
+	// svid, err := l.spiffe.GetX509SVID()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("getting x509 svid: %w", err)
+	// }
 
-	trustBundle, err := l.spiffe.GetX509BundleForTrustDomain(svid.ID.TrustDomain())
-	if err != nil {
-		return nil, fmt.Errorf("getting spiffe trust bundle: %w", err)
-	}
+	// trustBundle, err := l.spiffe.GetX509BundleForTrustDomain(svid.ID.TrustDomain())
+	// if err != nil {
+	// 	return nil, fmt.Errorf("getting spiffe trust bundle: %w", err)
+	// }
 
 	clientCAs := x509.NewCertPool()
-	for _, cert := range trustBundle.X509Authorities() {
-		clientCAs.AddCert(cert)
-	}
+	// for _, cert := range trustBundle.X509Authorities() {
+	// 	clientCAs.AddCert(cert)
+	// }
 
 	l.tlsConfig = &tls.Config{
 		GetCertificate: l.getCertificate,

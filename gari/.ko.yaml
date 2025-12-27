@@ -1,0 +1,6 @@
+# Enable capabilities for the gateway-instance image
+builds:
+- id: gateway-instance
+  dir: cmd/gateway-instance
+  linux_capabilities:
+  - NET_BIND_SERVICE=ep

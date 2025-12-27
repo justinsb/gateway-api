@@ -4,10 +4,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strconv"
-	"strings"
 
-	"github.com/spiffe/go-spiffe/v2/spiffeid"
-	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"k8s.io/klog/v2"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/gari/pkg/debug"
@@ -89,21 +86,21 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 	// TODO: Can we cache httpTransport?  by backend?
 	httpTransport := &http.Transport{}
 
-	if s.spiffeID != "" && targetProtocol == "https" {
-		spiffeSource := s.spiffe
+	// if s.spiffeID != "" && targetProtocol == "https" {
+	// 	spiffeSource := s.spiffe
 
-		// Allowed SPIFFE ID
-		spiffeID := s.spiffeID
-		spiffeID = strings.ReplaceAll(spiffeID, "{{namespace}}", serviceNamespace)
-		spiffeID = strings.ReplaceAll(spiffeID, "{{name}}", serviceName)
-		serverID := spiffeid.RequireFromString(spiffeID)
+	// 	// Allowed SPIFFE ID
+	// 	spiffeID := s.spiffeID
+	// 	spiffeID = strings.ReplaceAll(spiffeID, "{{namespace}}", serviceNamespace)
+	// 	spiffeID = strings.ReplaceAll(spiffeID, "{{name}}", serviceName)
+	// 	serverID := spiffeid.RequireFromString(spiffeID)
 
-		klog.Infof("creating tlsclientconfig %q requires %q", backendHostName, spiffeID)
-		// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/client`
-		tlsClientConfig := tlsconfig.MTLSClientConfig(spiffeSource, spiffeSource, tlsconfig.AuthorizeID(serverID))
+	// 	klog.Infof("creating tlsclientconfig %q requires %q", backendHostName, spiffeID)
+	// 	// Create a `tls.Config` to allow mTLS connections, and verify that presented certificate has SPIFFE ID `spiffe://example.org/client`
+	// 	tlsClientConfig := tlsconfig.MTLSClientConfig(spiffeSource, spiffeSource, tlsconfig.AuthorizeID(serverID))
 
-		httpTransport.TLSClientConfig = tlsClientConfig
-	}
+	// 	httpTransport.TLSClientConfig = tlsClientConfig
+	// }
 
 	proxy := &httputil.ReverseProxy{
 		Director:  director,

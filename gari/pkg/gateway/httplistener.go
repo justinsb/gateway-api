@@ -49,6 +49,11 @@ func (l *HTTPListener) Start(ctx context.Context, listen string) error {
 func (l *HTTPListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	{
+		log := klog.FromContext(ctx)
+		log.Info("serving HTTP request", "host", r.Host, "url", r.URL)
+	}
+
 	match, found := l.gateway.lookupHTTPRoute(ctx, r)
 	if !found {
 		log := klog.FromContext(ctx)

@@ -30,20 +30,20 @@ func (f *errorFilter) Handle(w http.ResponseWriter, req *http.Request) bool {
 
 func (r *httpRule) buildFilter(ctx context.Context, client client.Client, ns string, obj *gatewayapi.HTTPRouteFilter) (Filter, error) {
 	switch obj.Type {
-	case gatewayapi.HTTPRouteFilterExtensionRef:
-		if obj.ExtensionRef == nil {
-			return nil, fmt.Errorf("extensionRef not set in filter %v", obj)
-		}
-		switch obj.ExtensionRef.Kind {
-		case "OIDCAuth":
-			return buildOIDCAuthFilter(ctx, client, ns, obj.ExtensionRef, r.parent.spiffe)
+	// case gatewayapi.HTTPRouteFilterExtensionRef:
+	// 	if obj.ExtensionRef == nil {
+	// 		return nil, fmt.Errorf("extensionRef not set in filter %v", obj)
+	// 	}
+	// 	switch obj.ExtensionRef.Kind {
+	// 	case "OIDCAuth":
+	// 		return buildOIDCAuthFilter(ctx, client, ns, obj.ExtensionRef, r.parent.spiffe)
 
-		case "External":
-			return buildExternalFilter(ctx, client, ns, obj.ExtensionRef, r.parent.spiffe)
+	// 	case "External":
+	// 		return buildExternalFilter(ctx, client, ns, obj.ExtensionRef, r.parent.spiffe)
 
-		default:
-			return nil, fmt.Errorf("unhandled extensionRef kind %v", obj)
-		}
+	// 	default:
+	// 		return nil, fmt.Errorf("unhandled extensionRef kind %v", obj)
+	// 	}
 	default:
 		return nil, fmt.Errorf("unhandled filter type %v", obj)
 	}

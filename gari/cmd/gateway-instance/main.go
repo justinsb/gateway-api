@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"github.com/justinsb/packages/kinspire/client"
+	// "github.com/justinsb/packages/kinspire/client"
 
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/gari/apis/v1alpha1"
@@ -62,27 +62,29 @@ func run(ctx context.Context) error {
 	log := klog.FromContext(ctx)
 
 	httpListen := ":8080"
+	flag.StringVar(&httpListen, "http-listen", httpListen, "http listen address")
 	httpsListen := ":8443"
+	flag.StringVar(&httpsListen, "https-listen", httpsListen, "https listen address")
 
-	var spiffeID string
-	flag.StringVar(&spiffeID, "spiffe", spiffeID, "spiffe ID for backend communication")
+	// var spiffeID string
+	// flag.StringVar(&spiffeID, "spiffe", spiffeID, "spiffe ID for backend communication")
 	var tlsFlags tlsFlags
 	flag.Var(&tlsFlags, "tls", "tls configuration")
 
 	flag.Parse()
 
-	var spiffe *client.SPIFFESource
-	if spiffeID != "" {
-		if err := client.SPIFFE.Init(ctx); err != nil {
-			return err
-		}
-		spiffe = client.SPIFFE.Source()
-		// if err := gateway.InitSPIFFE(ctx); err != nil {
-		// 	return err
-		// }
-	}
+	// var spiffe *client.SPIFFESource
+	// if spiffeID != "" {
+	// 	if err := client.SPIFFE.Init(ctx); err != nil {
+	// 		return err
+	// 	}
+	// 	spiffe = client.SPIFFE.Source()
+	// 	// if err := gateway.InitSPIFFE(ctx); err != nil {
+	// 	// 	return err
+	// 	// }
+	// }
 
-	gw, err := gateway.New(spiffe, spiffeID)
+	gw, err := gateway.New() //spiffe, spiffeID)
 	if err != nil {
 		return err
 	}

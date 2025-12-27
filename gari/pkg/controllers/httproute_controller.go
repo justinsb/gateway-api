@@ -10,9 +10,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 	"sigs.k8s.io/gateway-api/gari/pkg/gateway"
-	"sigs.k8s.io/kubebuilder-declarative-pattern/commonclient"
+	// "sigs.k8s.io/kubebuilder-declarative-pattern/commonclient"
 	// "sigs.k8s.io/kubebuilder-declarative-pattern/pkg/patterns/addon"
 )
 
@@ -110,7 +111,7 @@ func (r *HTTPRouteController) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	// Watch for changes to HTTPRoute
-	err = c.Watch(commonclient.SourceKind(mgr.GetCache(), &gatewayapi.HTTPRoute{}), &handler.EnqueueRequestForObject{})
+	err = c.Watch(source.Kind(mgr.GetCache(), &gatewayapi.HTTPRoute{}, &handler.TypedEnqueueRequestForObject[*gatewayapi.HTTPRoute]{}))
 	if err != nil {
 		return err
 	}

@@ -21,17 +21,15 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"k8s.io/apimachinery/pkg/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"sigs.k8s.io/kubebuilder-declarative-pattern/pkg/restmapper"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -92,14 +90,13 @@ func (o *Operator) run(ctx context.Context) error {
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Metrics:                metricsserver.Options{BindAddress: "0"},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "3d22f779.k8s.io",
+		LeaderElectionID:       "gari.gateway.k8s.io",
 
 		// MapperProvider provides the rest mapper used to map go types to Kubernetes APIs
-		MapperProvider: restmapper.NewControllerRESTMapper,
+		// MapperProvider: restmapper.NewControllerRESTMapper,
 	})
 	if err != nil {
 		return fmt.Errorf("error creating manager: %w", err)
