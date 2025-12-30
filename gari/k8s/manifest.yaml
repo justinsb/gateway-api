@@ -27,10 +27,14 @@ spec:
       - name: gateway-instance
         image: gateway-instance:latest
         args:
-        - --http-listen
-        - ":80"
-        - --https-listen
+        - --http
+        - "88.99.67.50:80"
+        - --http
+        - "[2a01:4f8:10a:1363::1]:80"
+        - --https
         - "88.99.67.50:443"
+        - --https
+        - "[2a01:4f8:10a:1363::1]:443"
         - --sni=true
         # securityContext:
         #   capabilities:

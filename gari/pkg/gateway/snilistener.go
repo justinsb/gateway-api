@@ -189,7 +189,7 @@ func readClientHello(clientConn net.Conn) (*clientHelloInfo, error) {
 		return nil, fmt.Errorf("malformed client_hello header")
 	}
 	if contentType != 22 {
-		return nil, fmt.Errorf("expected content type (22), got %d", contentType)
+		return nil, fmt.Errorf("expected content type 0x22, got %x", contentType)
 	}
 
 	var legacyVersion uint16

@@ -63,7 +63,7 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 		targetProtocol = "https"
 		klog.Warningf("backend port for %v is %v; inferred target protocol %v", backendHostName, backendPort, targetProtocol)
 	default:
-		klog.Warningf("cannot determine backend protocol for %v port %v; backend=%+v", backendHostName, backendPort, debug.JSON(backendRef))
+		klog.Warningf("cannot determine backend protocol for %v port %v - assuming http; backend=%+v", backendHostName, backendPort, debug.JSON(backendRef))
 	}
 
 	director := func(req *http.Request) {

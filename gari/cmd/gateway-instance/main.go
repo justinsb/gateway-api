@@ -62,8 +62,8 @@ func (f *tlsFlags) Set(value string) error {
 func run(ctx context.Context) error {
 	log := klog.FromContext(ctx)
 
-	httpListen := ":8080"
-	flag.StringVar(&httpListen, "http", httpListen, "http listen address")
+	httpEndpoints := stringSliceFlag{}
+	flag.Var(&httpEndpoints, "http", "http listen addresses")
 	httpsEndpoints := stringSliceFlag{}
 	flag.Var(&httpsEndpoints, "https", "https listen addresses")
 
@@ -98,8 +98,11 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	if err := httpListener.Start(ctx, httpListen); err != nil {
-		return err
+	for _, httpListen := range httpEndpoints {
+		if err := httpListener.Start(ctx, httpListen); err != nil {
+			return fmt.Errorf("error starting http listener %q: %w", httpListen, err)
+		}
+		log.Info("started http listener", "listen", httpListen)
 	}
 
 	log.Info("tls configuration", "tlsFlags", tlsFlags)
@@ -118,8 +121,9 @@ func run(ctx context.Context) error {
 
 		for _, httpsListen := range httpsEndpoints {
 			if err := listener.Start(ctx, httpsListen); err != nil {
-				return err
+				return fmt.Errorf("error starting https listener %q: %w", httpsListen, err)
 			}
+			log.Info("started https listener", "listen", httpsListen)
 		}
 	}
 
@@ -132,8 +136,9 @@ func run(ctx context.Context) error {
 		for _, httpsListen := range httpsEndpoints {
 			log.Info("starting sni listener", "listen", httpsListen)
 			if err := listener.Start(ctx, httpsListen); err != nil {
-				return err
+				return fmt.Errorf("error starting sni listener %q: %w", httpsListen, err)
 			}
+			log.Info("started sni listener", "listen", httpsListen)
 		}
 	}
 
