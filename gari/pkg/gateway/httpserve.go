@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
@@ -10,21 +11,19 @@ import (
 	"sigs.k8s.io/gateway-api/gari/pkg/debug"
 )
 
-func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *httpRule) {
-	ctx := req.Context()
+func (s *httpRoute) serveHTTP(ctx context.Context, httpRequest *HTTPRequest, rule *httpRule) {
+	for _, filter := range rule.Filters {
+		if filter.Handle(ctx, httpRequest) {
+			return
+		}
+	}
 
 	backendRefs := rule.obj.BackendRefs
 	if len(backendRefs) == 0 {
 		log := klog.FromContext(ctx)
 		log.Info("no backedRefs in rule")
-		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+		http.Error(httpRequest.w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
-	}
-
-	for _, filter := range rule.Filters {
-		if filter.Handle(w, req) {
-			return
-		}
 	}
 
 	// TODO: Better load balancing etc
@@ -44,13 +43,13 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 	if backendPort == 0 {
 		log := klog.FromContext(ctx)
 		log.Info("cannot infer backendRef port")
-		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+		http.Error(httpRequest.w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
 	}
 
 	// This feels "wrong", but we don't have the scheme in e.g. the URL
 	forwardedProto := "http"
-	if req.TLS != nil {
+	if httpRequest.req.TLS != nil {
 		forwardedProto = "https"
 	}
 
@@ -107,5 +106,5 @@ func (s *httpRoute) serveHTTP(w http.ResponseWriter, req *http.Request, rule *ht
 		Transport: httpTransport,
 	}
 
-	proxy.ServeHTTP(w, req)
+	proxy.ServeHTTP(httpRequest.w, httpRequest.req)
 }

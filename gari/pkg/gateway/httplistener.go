@@ -62,5 +62,16 @@ func (l *HTTPListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match.route.serveHTTP(w, r, match.rule)
+	httpRequest := &HTTPRequest{
+		req: r,
+		w:   w,
+	}
+
+	if httpRequest.req.TLS != nil {
+		httpRequest.scheme = "https"
+	} else {
+		httpRequest.scheme = "http"
+	}
+
+	match.route.serveHTTP(ctx, httpRequest, match.rule)
 }

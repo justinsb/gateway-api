@@ -68,6 +68,7 @@ func (r *httpRoutes) lookupHTTPRoute(ctx context.Context, req *http.Request) (ro
 	if bestMatch.score == math.MinInt {
 		log := klog.FromContext(ctx)
 		log.Info("no routes for host", "host", host)
+		// TODO: We should match http routes that have no hostnames
 		return routeMatch{}, false
 	}
 
