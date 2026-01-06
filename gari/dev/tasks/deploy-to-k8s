@@ -44,3 +44,6 @@ kubectl apply --server-side -f config/rbac/role.yaml
 cat k8s/manifest.yaml | \
 sed "s|gateway-instance:latest|${IMAGE_PREFIX}gateway-instance:${IMAGE_TAG}|g" | \
 KUBECTL_APPLYSET=true kubectl apply -n gateway-system --prune --applyset=gateway-instance -f -
+
+kubectl delete pods -n gateway-system --all
+kubectl delete rs -n gateway-system --all
