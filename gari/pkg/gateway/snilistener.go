@@ -204,7 +204,9 @@ func readClientHello(clientConn net.Conn) (*clientHelloInfo, error) {
 	if !header.ReadUint16(&messageLength) {
 		return nil, fmt.Errorf("malformed message length header")
 	}
-	if messageLength < 4 || messageLength > 1024 {
+	// We set a reasonable limit on the message length to limit the attack surface.
+	// We do want to support client certificates, so we allow up to 16KB.
+	if messageLength < 4 || messageLength > 16384 {
 		return nil, fmt.Errorf("unexpected message length: %d", messageLength)
 	}
 
@@ -220,7 +222,7 @@ func readClientHello(clientConn net.Conn) (*clientHelloInfo, error) {
 	if !header.ReadUint24(&handshakeMessageLength) {
 		return nil, fmt.Errorf("malformed client_hello header")
 	}
-	if handshakeMessageLength < 4 || handshakeMessageLength > 1024 {
+	if handshakeMessageLength < 4 || handshakeMessageLength > 16384 {
 		return nil, fmt.Errorf("unexpected client_hello message length: %d", messageLength)
 	}
 
